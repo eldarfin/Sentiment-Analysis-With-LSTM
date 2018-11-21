@@ -1,65 +1,58 @@
-'''for i in range(len(positive)):
-    if i >= len(positive):
-        break
-    if len(positive[i]) == 0:
-        positive.pop(i)
-
-for i in range(len(positive)):
-    if i >= len(positive):
-        break
-    if len(positive[i]) == 0:
-        print(i)
-
-with open('negative10kmod.txt', 'w+') as f:
-    for line in negative:
-        f.write('%s\n' % line)
-
-with open('positive10kmod.txt', 'w+') as f:
-    for line in positive:
-        f.write('%s\n' % line)
-
-for i in range(len(negative)):
-    if i >= len(negative):
-        break
-    if len(negative[i]) == 0:
-        negative.pop(i)
-
-for i in range(len(negative)):
-    if i >= len(negative):
-        break
-    if len(negative[i]) == 0:
-        print(i)'''
-
 from nltk.tokenize import word_tokenize
-import nltk
-import re
+from nltk.corpus import stopwords
+import string
 from gensim.models import Word2Vec, KeyedVectors
+#import keras
 
 
 
 negative = open('negative10kmod.txt','r').readlines()
-negative = list(map(lambda s: s.strip(), negative))
-negative = list(map(lambda s: re.sub('[^a-zA-z0-9\s]','',s), negative))
-
-
-
 positive = open('positive10kmod.txt','r').readlines()
-positive = list(map(lambda s: s.strip(), positive))
-positive = list(map(lambda s: re.sub('[^a-zA-z0-9\s]','',s), positive))
+
+
+train_positive = positive[:7000]
+test_positive = positive[7000:]
+train_negative = negative[:7000]
+test_negative = negative[7000:]
+
+x_train = train_positive + train_negative
+y_train = [1] * 7000 + [0] * 7000
+x_test = test_positive + test_negative
+y_test = [1] * 2926 + [0] * 2704
+
+# Preprocess training set
+temp = []
+for line in x_train:
+    tokens = word_tokenize(line)
+    tokens = [w.lower() for w in tokens]
+    table = str.maketrans('', '', string.punctuation)
+    stripped = [w.translate(table) for w in tokens]
+    words = [words for word in stripped if word.isalpha()]
+    stop_words = set(stopwords.words('english'))
+    words = [w for w in words if not w in stop_words]
+    temp.append(words)
+
+x_train = temp
+
+# Preprocess test set
+temp = []
+for line in x_test:
+    tokens = word_tokenize(line)
+    tokens = [w.lower() for w in tokens]
+    table = str.maketrans('', '', string.punctuation)
+    stripped = [w.translate(table) for w in tokens]
+    words = [words for word in stripped if word.isalpha()]
+    stop_words = set(stopwords.words('english'))
+    words = [w for w in words if not w in stop_words]
+    temp.append(words)
+
+x_test = temp
+
+# Train word2vec model
+model_train = Word2Vec(sentences=x_train, size=100, window=5, workers=4, min_count=1)
+vector = model_train.wv
+keras_embedding_layer = vector.get_keras_embedding(train_embeddings=True)
 
 
 
-negative_words = []
-for line in negative:
-    tok = word_tokenize(line)
-    negative_words.append(tok) 
 
-positive_words = []
-for line in positive:
-    tok = word_tokenize(line)
-    positive_words.append(tok)
-
-model = Word2Vec(positive_words, size=100)
-vector = model.wv
-vector = vector.get_keras_embedding(train_embeddings=True)
-print(type(vector))
