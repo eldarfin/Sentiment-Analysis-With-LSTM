@@ -2,7 +2,10 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
 from gensim.models import Word2Vec, KeyedVectors
-#import keras
+from keras.models import Sequential
+from keras.layers import Dense, Embedding, LSTM
+from keras.layers.embeddings import Embedding
+from keras.initializers import Constant
 
 
 
@@ -53,6 +56,13 @@ model_train = Word2Vec(sentences=x_train, size=100, window=5, workers=4, min_cou
 vector = model_train.wv
 keras_embedding_layer = vector.get_keras_embedding(train_embeddings=True)
 
+model = Sequential()
+model.add(keras_embedding_layer)
+model.add(LSTM(units=100, dropout=0.2, recurrent_dropout=0.2, return_sequences=True))
+model.add(Dense(1, activation='sigmoid'))
 
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.fit(x_train, y_train, batch_size=128, epochs=25, validation_data=(x_test, y_test), verbose=2)
+model.save('keras_lstm.model')
 
 
