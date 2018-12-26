@@ -3,7 +3,7 @@ from keras.preprocessing.text import one_hot
 from keras_preprocessing import sequence
 from keras import Sequential
 from keras.models import load_model
-from keras.layers import Embedding, LSTM, Dense
+from keras.layers import Embedding, LSTM, Dense, Dropout
 import matplotlib.pyplot as plt
 import sys
 import json
@@ -108,9 +108,12 @@ gg = 0
 if gg <= 1:
     ### Build the model ###
     embedding_vector_length = 32
+    dropout_rate = 0.2
     model = Sequential()
     model.add(Embedding(vocab, embedding_vector_length, input_length=max_review_length))
+    model.add(Dropout(dropout_rate))
     model.add(LSTM(100, dropout=0.5))
+    model.add(Dropout(dropout_rate))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -125,11 +128,13 @@ if gg <= 1:
     print("Accuracy on dataset 2: %.2f%%" % (scores_2[1]*100))
 
     model.save('model.h5')
+    model.save_weights('model_weights.h5')
     del model
 
 else:
     ### Load and evaluate previous model ###
     model = load_model('model.h5')
+    model.load_weights('model_weights.h5')
     scores = model.evaluate(x_test, y_test, verbose=0)
     print("Accuracy: %.2f%%" % (scores[1]*100))
 
